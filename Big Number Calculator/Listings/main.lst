@@ -1,0 +1,266 @@
+C51 COMPILER V9.60.0.0   MAIN                                                              04/16/2022 13:36:03 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /*
+   2           * final
+   3           *
+   4           * Created: 6/10/2021 
+   5           * Author : M.Assem
+   6           */ 
+   7          
+   8          #include <reg51.h>                                                        // Include x51 header file
+   9          
+  10          unsigned char value_to_compare  , counter1 = 0 , counter2 = 0 , operation , result = 0 , carry = 0 , remai
+             -nder ;
+  11          signed char general_counter = 0 , counter_first = 0 , counter_second = 0 , counter_result = 0 , counter_ad
+             -d = 0 , counter_send = 0 , length_result = 0 ;
+  12          
+  13          
+  14          unsigned char first_arr [17] ;
+  15          unsigned char second_arr [17] ;
+  16          unsigned char result_arr [32] ;
+  17          
+  18          unsigned char welcom_arr[15] = "Mohamed Assem" ;                                //Welcome message
+  19          
+  20          
+  21                            /* UART initialization */
+  22          void UART_Init()                                                          //uart initialization
+  23          {
+  24   1        TMOD = 0x20;                                                            //Timer 1, 8-bit auto reload mode 
+  25   1        TH1 = 0xFD;                                                             // Load value for 9600 baud rate 
+  26   1        SCON = 0x50;                                                            // Mode 1, reception enable 
+  27   1        TR1 = 1;                                                                // Start timer 1 
+  28   1      }
+  29                          /*Send data(ascii) to UART*/
+  30          void Transmit_data(unsigned char tx_data)
+  31          {
+  32   1        SBUF = tx_data;                                                         // Load unsigned char in SBUF register
+  33   1        while (TI==0);                                                          // Wait until stop bit transmit
+  34   1        TI = 0;                                                                 // Clear TI flag 
+  35   1      }
+  36          
+  37                  /*Read first Numbers from UART and save it in array*/
+  38          void Read_First_Number(){
+  39   1        while(counter1 < 17){
+  40   2          while(RI == 0);                                                       //Wait until stop bit REVIEVE
+  41   2          value_to_compare = SBUF ;                                             //add value in array
+  42   2          RI = 0 ;
+  43   2          if(counter1 == 16){
+  44   3            while(1){
+  45   4              while(RI == 0);
+  46   4              operation = SBUF ;
+  47   4              RI = 0 ;
+  48   4              if(operation == '+' || operation == '*'){
+  49   5                break;
+  50   5              }
+  51   4            }
+  52   3            Transmit_data(operation);
+C51 COMPILER V9.60.0.0   MAIN                                                              04/16/2022 13:36:03 PAGE 2   
+
+  53   3            break ;
+  54   3          }
+  55   2          if(value_to_compare == '0' && counter1 > 0)
+  56   2          {
+  57   3            first_arr[counter1] = (value_to_compare - 48) ;                     //convert form hexadecimal to decimal
+  58   3            Transmit_data(value_to_compare);
+  59   3            counter1 ++ ;
+  60   3          }
+  61   2          else if(value_to_compare >= '1' && value_to_compare <= '9')           //true --> if the char between 0 to 9
+  62   2          {
+  63   3            first_arr[counter1] = (value_to_compare - 48) ;                     //convert form hexadecimal to decimal
+  64   3            Transmit_data(value_to_compare);
+  65   3            counter1 ++ ;
+  66   3          }
+  67   2          else if(value_to_compare >= 'A' && value_to_compare <= 'F')           //true --> if the char between A to F
+  68   2          {
+  69   3            first_arr[counter1] = (value_to_compare - 55) ;                     //convert form hexadecimal to decimal
+  70   3            Transmit_data(value_to_compare);
+  71   3            counter1 ++ ;
+  72   3          } 
+  73   2          else if(value_to_compare >= 'a' && value_to_compare <= 'f')           //true --> if the char between a to f
+  74   2          {
+  75   3            first_arr[counter1] = (value_to_compare - 87) ;                     //convert form hexadecimal to decimal
+  76   3            Transmit_data(value_to_compare);
+  77   3            counter1 ++ ;
+  78   3          }
+  79   2          else if((value_to_compare == '*' || value_to_compare == '+') && counter1 > 0 )
+  80   2          {
+  81   3            operation = value_to_compare ;
+  82   3            Transmit_data(value_to_compare);
+  83   3            break ;
+  84   3          }
+  85   2        }
+  86   1      }
+  87          
+  88                    /*Read second Numbers from UART and save it in array*/
+  89          void Read_second_Number(){
+  90   1        while(counter2 < 17){
+  91   2          while(RI == 0);                                                       //Wait until stop bit REVIEVE
+  92   2          value_to_compare = SBUF ;                                             //add value in array
+  93   2          RI = 0 ;
+  94   2          if(counter2 == 16){
+  95   3            Transmit_data('=');
+  96   3            break ;
+  97   3          }
+  98   2          if(value_to_compare >= '0' && value_to_compare <= '9')              //true --> if the char between 0 to 9
+  99   2          {
+ 100   3            second_arr[counter2] = (value_to_compare - 48) ;                      //convert form hexadecimal to decimal
+ 101   3            Transmit_data(value_to_compare);
+ 102   3            counter2 ++ ;
+ 103   3          }
+ 104   2          else if(value_to_compare >= 'A' && value_to_compare <= 'F')             //true --> if the char between A to F
+ 105   2          {
+ 106   3            second_arr[counter2] = (value_to_compare - 55) ;                      //convert form hexadecimal to decimal
+ 107   3            Transmit_data(value_to_compare);
+ 108   3            counter2 ++ ;
+ 109   3          } 
+ 110   2          else if(value_to_compare >= 'a' && value_to_compare <= 'f')             //true --> if the char between a to f
+ 111   2          {
+ 112   3            second_arr[counter2] = (value_to_compare - 87) ;                      //convert form hexadecimal to decimal
+ 113   3            Transmit_data(value_to_compare);
+ 114   3            counter2 ++ ;
+C51 COMPILER V9.60.0.0   MAIN                                                              04/16/2022 13:36:03 PAGE 3   
+
+ 115   3          }
+ 116   2          else if(value_to_compare == '=' && counter2 > 0 )
+ 117   2          {
+ 118   3            Transmit_data(value_to_compare);
+ 119   3            break ;
+ 120   3          }
+ 121   2        }
+ 122   1      }
+ 123          
+ 124                              /*  MUL FUNCTION    */
+ 125          void Mul(){
+ 126   1        for( counter_second = (counter2 - 1 ) ; counter_second >= 0 ; counter_second-- ){
+ 127   2          counter_result = 0 ;
+ 128   2          for( counter_first = (counter1 - 1) ; counter_first >= 0 ; counter_first-- ){
+ 129   3            result = (second_arr[counter_second] * first_arr[counter_first]) + carry ;
+ 130   3            carry = (result_arr[counter_result + counter_add] + result) / 16 ;
+ 131   3            result_arr[counter_result + counter_add] = ((result_arr[counter_result + counter_add] + result) % 16 ) 
+             -;
+ 132   3            counter_result ++ ;
+ 133   3          }
+ 134   2          if(carry > 0 ){
+ 135   3            result_arr[counter_result + counter_add] = carry ;
+ 136   3            carry = 0 ;
+ 137   3            if(counter_second == 0){
+ 138   4              counter_send ++ ;
+ 139   4            }
+ 140   3          }
+ 141   2          counter_add++ ;
+ 142   2        }
+ 143   1      }
+ 144          
+ 145                              /*  ADD FUNCTION    */
+ 146          void Add(){
+ 147   1        if(counter1 > counter2){
+ 148   2          general_counter = counter1 ;
+ 149   2        }
+ 150   1        else{
+ 151   2          general_counter = counter2 ;
+ 152   2        }
+ 153   1        for( general_counter = (general_counter - 1) ; general_counter >= 0 ; general_counter-- ){
+ 154   2          result = second_arr[counter2 - 1] + first_arr[counter1 - 1] + carry ;
+ 155   2          carry = result / 16 ;
+ 156   2          result_arr[counter_result] = result % 16  ;
+ 157   2          counter_result ++ ;
+ 158   2          counter1-- ;
+ 159   2          counter2-- ;
+ 160   2        }
+ 161   1        if(carry > 0 ){
+ 162   2          result_arr[counter_result] = carry ;
+ 163   2          counter_result ++ ;
+ 164   2          carry = 0 ;
+ 165   2        }
+ 166   1      }
+ 167          
+ 168                              /*  MAIN FUNCTION   */
+ 169          void main(){
+ 170   1        UART_Init();                                              // UART initialize function 
+ 171   1        for(general_counter = 0 ; welcom_arr[general_counter]!=0 ; general_counter++)
+ 172   1        {
+ 173   2          Transmit_data(welcom_arr[general_counter]);
+ 174   2        }
+ 175   1        general_counter = 0;
+C51 COMPILER V9.60.0.0   MAIN                                                              04/16/2022 13:36:03 PAGE 4   
+
+ 176   1        Transmit_data('\r');
+ 177   1        while(1){
+ 178   2          Read_First_Number();
+ 179   2          Read_second_Number();
+ 180   2          
+ 181   2          if(operation == '*'){
+ 182   3            Mul();
+ 183   3            for(length_result = counter1 + counter2 + counter_send - 2 ; length_result >= 0 ; length_result--){
+ 184   4            remainder = result_arr[length_result] ;                     
+ 185   4            if (remainder < 10){                                  //if remainder from 0 to 9
+ 186   5              remainder = 48 + remainder;                         //add 48 to send ascii of ( 0 : 9 )
+ 187   5              Transmit_data(remainder);
+ 188   5            }
+ 189   4            else{
+ 190   5              remainder = 55 + remainder;                         //add 55 to send ascii of ( A : F )
+ 191   5              Transmit_data(remainder);
+ 192   5            }
+ 193   4            }
+ 194   3          }
+ 195   2          else if(operation == '+'){
+ 196   3            Add();
+ 197   3            for(length_result = counter_result - 1 ; length_result >= 0 ; length_result--){
+ 198   4            remainder = result_arr[length_result] ;                       
+ 199   4            if (remainder < 10){                                  //if remainder from 0 to 9
+ 200   5              remainder = 48 + remainder;                         //add 48 to send ascii of ( 0 : 9 )
+ 201   5              Transmit_data(remainder);
+ 202   5            }
+ 203   4            else{
+ 204   5              remainder = 55 + remainder;                         //add 55 to send ascii of ( A : F )
+ 205   5              Transmit_data(remainder);
+ 206   5            }
+ 207   4            }
+ 208   3          } 
+ 209   2          Transmit_data('\r');
+ 210   2          
+ 211   2                            /*set all variables to default*/
+ 212   2          result = 0 ;
+ 213   2          counter_add = 0 ;
+ 214   2          counter_send = 0 ;
+ 215   2          counter_result = 0 ;
+ 216   2          length_result = 0 ;
+ 217   2          counter1 = 0 ;
+ 218   2          counter2 = 0 ;
+ 219   2          general_counter = 0 ;
+ 220   2          
+ 221   2          for(general_counter = 17; general_counter >= 0; general_counter--)      //clear the first number's array ar
+             -ray
+ 222   2          first_arr[general_counter] = 0 ;
+ 223   2          for(general_counter = 17; general_counter >= 0; general_counter--)      //clear the second number's array a
+             -rray
+ 224   2          second_arr[general_counter] = 0 ;
+ 225   2          for(general_counter = 32; general_counter >= 0; general_counter--)      //clear the result number's array a
+             -rray
+ 226   2          result_arr[general_counter] = 0 ;
+ 227   2        }
+ 228   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    850    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+C51 COMPILER V9.60.0.0   MAIN                                                              04/16/2022 13:36:03 PAGE 5   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     95    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
